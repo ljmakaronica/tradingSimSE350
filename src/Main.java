@@ -1,206 +1,266 @@
 import prices.Price;
 import prices.PriceFactory;
+import prices.InvalidPriceException;
+import tradables.*;
+import book.ProductBook;
+import exceptions.*;
+public class Main {
 
-public static void main(String[] args) {
+    private static ProductBook productBook;
 
-        Price p1, p2, p3, p4, p5;
+    public static void main(String[] args) {
 
         try {
+            System.out.println("1) Try to make a ProductBook with a null product symbol");
+            makeProductBook(null);
 
-            System.out.println("\nTest - PriceFactory.makePrice(String):");
-            System.out.println("\t1) Should say $98,765.00: " + PriceFactory.makePrice("98765"));
-            System.out.println("\t2) Should say $0.00: " + PriceFactory.makePrice("000"));
-            System.out.println("\t3) Should say $0.22: " + PriceFactory.makePrice(".22"));
-            System.out.println("\t4) Should say $14.75: " + PriceFactory.makePrice("14.75"));
-            System.out.println("\t5) Should say $25.79: " + PriceFactory.makePrice("25.79"));
-            System.out.println("\t6) Should say $1.76: " + PriceFactory.makePrice("001.76"));
-            System.out.println("\t7) Should say $4,567.89: " + PriceFactory.makePrice("4,567.89"));
-            System.out.println("\t8) Should say $-12.85: " + PriceFactory.makePrice("$-12.85"));
-            System.out.println("\t9) Should say $-12.00: " + PriceFactory.makePrice("$-12"));
-            System.out.println("\t10) Should say $-0.89: " + PriceFactory.makePrice("$-.89"));
-            System.out.println("\t11) Should say $1.20: " + PriceFactory.makePrice("1.20"));
-            System.out.println("\t12) Should say $12.34 " + PriceFactory.makePrice("$12.34"));
-            System.out.println("\t13) Should say $1.00: " + PriceFactory.makePrice("1"));
-            System.out.println("\t14) Should say $1.00: " + PriceFactory.makePrice("$1."));
-            System.out.println("\t15) Should say $1,234,567.89: " + PriceFactory.makePrice("$1,234,567.89"));
+            System.out.println("2) Try to make a ProductBook with an empty product symbol");
+            makeProductBook("");
 
-            try {
-                System.out.println("\t16) Should throw an InvalidPriceException: ");
-                PriceFactory.makePrice("12.3456");
-            } catch (Exception ipo) {
-                System.out.println("\t\t" + ipo.getClass().getSimpleName() + ": " + ipo.getMessage());
-            }
-            try {
-                System.out.println("\t17) Should throw an InvalidPriceException: ");
-                PriceFactory.makePrice("12.3");
-            } catch (Exception ipo) {
-                System.out.println("\t\t" + ipo.getClass().getSimpleName() + ": " + ipo.getMessage());
-            }
-            try {
-                System.out.println("\t18) Should throw an InvalidPriceException: ");
-                PriceFactory.makePrice("12.3A");
-            } catch (Exception ipo) {
-                System.out.println("\t\t" + ipo.getClass().getSimpleName() + ": " + ipo.getMessage());
-            }
-            try {
-                System.out.println("\t19) Should throw an InvalidPriceException: ");
-                PriceFactory.makePrice("12.34.56");
-            } catch (Exception ipo) {
-                System.out.println("\t\t" + ipo.getClass().getSimpleName() + ": " + ipo.getMessage());
-            }
-            try {
-                System.out.println("\t20) Should throw an InvalidPriceException: ");
-                PriceFactory.makePrice("");
-            } catch (Exception ipo) {
-                System.out.println("\t\t" + ipo.getClass().getSimpleName() + ": " + ipo.getMessage());
-            }
+            System.out.println("3) Make a ProductBook with a legitimate product symbol");
+            makeProductBook("TGT");
+            printTopOfBook();
+            printBook();
 
-        } catch (Exception ipo) {
-            System.out.println(ipo.getMessage());
-            return;
+            System.out.println("4) Try to add a null order to the TGT product book");
+            addNullOrder();
+
+            System.out.println("5) Try to add a null quote to the TGT product book");
+            addNullQuote();
+
+            System.out.println("6) Add 3 BUY orders to the TGT product book");
+            TradableDTO dto1 = addOrder("AXE", "$133.75", 50, BookSide.BUY);
+            TradableDTO dto2 = addOrder("BAT", "$133.85", 150, BookSide.BUY);
+            TradableDTO dto3 = addOrder("CAM", "$133.95", 80, BookSide.BUY);
+            assert dto1 != null;
+            assert dto2 != null;
+            assert dto3 != null;
+            printTopOfBook();
+            printBook();
+
+            System.out.println("7) Cancel the 3 BUY orders in the TGT product book");
+            cancelOrder(dto1.tradableId(), BookSide.BUY);
+            cancelOrder(dto2.tradableId(), BookSide.BUY);
+            cancelOrder(dto3.tradableId(), BookSide.BUY);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("8) Add 3 SELL orders to the TGT product book");
+            dto1 = addOrder("AXE", "$134.00", 50, BookSide.SELL);
+            dto2 = addOrder("BAT", "$134.05", 150, BookSide.SELL);
+            dto3 = addOrder("CAM", "$134.15", 80, BookSide.SELL);
+            assert dto1 != null;
+            assert dto2 != null;
+            assert dto3 != null;
+            printTopOfBook();
+            printBook();
+
+            System.out.println("9) Cancel the 3 SELL orders in the TGT product book");
+            cancelOrder(dto1.tradableId(), BookSide.SELL);
+            cancelOrder(dto2.tradableId(), BookSide.SELL);
+            cancelOrder(dto3.tradableId(), BookSide.SELL);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("10) Add 3 quotes to the TGT product book");
+            addQuote("AXE", "$134.00", 50, "$134.30", 50);
+            addQuote("BAT", "$133.90", 50, "$134.20", 50);
+            addQuote("CAM", "$133.80", 50, "$134.10", 50);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("11) Change the a quotes in the TGT product book");
+            addQuote("AXE", "$134.01", 50, "$134.05", 50);
+            printBook();
+
+            System.out.println("12) Cancel the 3 quotes in the TGT product book");
+            removeQuote("AXE");
+            removeQuote("BAT");
+            removeQuote("CAM");
+            printTopOfBook();
+            printBook();
+
+            System.out.println("13) Try to cancel bad orders in the TGT product book");
+            cancelOrder(null, BookSide.BUY);
+            cancelOrder(null, BookSide.SELL);
+
+            System.out.println("14) Try to cancel a bad quote in the TGT product book");
+            removeQuote(null);
+
+            System.out.println("15) Trade test: Single BUY and single SELL order - fully trade");
+            addOrder("DEM", "$134.00", 50, BookSide.BUY);
+            addOrder("EEG", "$134.00", 50, BookSide.SELL);
+            printBook();
+
+            System.out.println("16) Trade test: Single BUY and single SELL order - full/partial trade & cancel");
+            addOrder("FEN", "$134.00", 50, BookSide.BUY);
+            dto1 = addOrder("GAM", "$134.00", 100, BookSide.SELL);
+            assert dto1 != null;
+            printTopOfBook();
+            printBook();
+            cancelOrder(dto1.tradableId(), BookSide.SELL);
+            System.out.println();
+
+            System.out.println("17) Trade test: Multiple BUY and single SELL order - fully trade");
+            addOrder("HOB", "$134.00", 60, BookSide.BUY);
+            addOrder("IGY", "$134.00", 70, BookSide.BUY);
+            addOrder("JAM", "$134.00", 80, BookSide.BUY);
+            addOrder("KIT", "$134.00", 210, BookSide.SELL);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("18) Trade test: Multiple BUY and single SELL order - full/partial trade & cancel");
+            dto1 = addOrder("LEM", "$134.00", 60, BookSide.BUY);
+            dto2 = addOrder("MOD", "$134.00", 70, BookSide.BUY);
+            dto3 = addOrder("NET", "$134.00", 80, BookSide.BUY);
+            addOrder("OBS", "$134.00", 100, BookSide.SELL);
+            assert dto1 != null;
+            assert dto2 != null;
+            assert dto3 != null;
+            cancelOrder(dto1.tradableId(), BookSide.BUY);
+            cancelOrder(dto2.tradableId(), BookSide.BUY);
+            cancelOrder(dto3.tradableId(), BookSide.BUY);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("19) Trade test: Single BUY and multiple SELL orders - fully trade");
+            addOrder("POP", "$134.00", 50, BookSide.SELL);
+            addOrder("QAB", "$134.00", 60, BookSide.SELL);
+            addOrder("REX", "$134.00", 70, BookSide.SELL);
+            addOrder("SAM", "$134.00", 180, BookSide.BUY);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("20) Trade test: Single BUY and multiple SELL orders - full/partial trade & cancel");
+            addOrder("TIM", "$134.00", 60, BookSide.SELL);
+            addOrder("UBL", "$134.00", 70, BookSide.SELL);
+            addOrder("VOM", "$134.00", 80, BookSide.SELL);
+            dto1 = addOrder("WUN", "$134.00", 250, BookSide.BUY);
+            assert dto1 != null;
+            cancelOrder(dto1.tradableId(), BookSide.BUY);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("21) Trade test: Multiple orders and quotes on BUY side traded with large SELL order");
+            addQuote("XEN", "$133.00", 50, "$133.20", 75);
+            addQuote("YAM", "$133.00", 50, "$133.20", 100);
+            addOrder("ZEN", "$133.00", 15, BookSide.BUY);
+            addOrder("AAM", "$133.00", 180, BookSide.BUY);
+            addOrder("BEN", "$133.00", 65, BookSide.BUY);
+            printTopOfBook();
+            printBook();
+            addOrder("CEN", "$133.00", 360, BookSide.SELL);
+            removeQuote("XEN");
+            removeQuote("YAM");
+            printTopOfBook();
+            printBook();
+
+            System.out.println("22) Trade test: Multiple orders and quotes on BUY side traded with 1 SELL order");
+            addQuote("XEN", "$133.00", 40, "$133.20", 75);
+            addQuote("YAM", "$133.00", 60, "$133.20", 100);
+            dto1 = addOrder("ZEN", "$133.00", 15, BookSide.BUY);
+            dto2 = addOrder("AAM", "$133.00", 180, BookSide.BUY);
+            dto3 = addOrder("BEN", "$133.00", 65, BookSide.BUY);
+            assert dto1 != null;
+            assert dto2 != null;
+            assert dto3 != null;
+            printTopOfBook();
+            printBook();
+            addOrder("CEN", "$133.00", 200, BookSide.SELL);
+            printTopOfBook();
+            printBook();
+
+            System.out.println("23) Trade test: Cancel all booked orders and quotes");
+            removeQuote("XEN");
+            removeQuote("YAM");
+            cancelOrder(dto1.tradableId(), BookSide.BUY);
+            cancelOrder(dto2.tradableId(), BookSide.BUY);
+            cancelOrder(dto3.tradableId(), BookSide.BUY);
+            printTopOfBook();
+            printBook();
+
+        } catch (Exception e) {
+            System.out.println("Unexpected exception: " + e.getClass().getSimpleName() +
+                    ":" + e.getMessage());
         }
+    }
 
-        // Prices for testing
-        p1 = PriceFactory.makePrice(100000);
-        p2 = PriceFactory.makePrice(1299);
-        p3 = PriceFactory.makePrice(85);
-        p4 = PriceFactory.makePrice(-7550);
-        p5 = PriceFactory.makePrice(1);
-
-
-        System.out.println("\nTest - isNegative:");
-        System.out.println("\t1) Should say false: " + p1.isNegative());
-        System.out.println("\t2) Should say false: " + p2.isNegative());
-        System.out.println("\t3) Should say false: " + p3.isNegative());
-        System.out.println("\t4) Should say true: " + p4.isNegative());
-        System.out.println("\t5) Should say false: " + p5.isNegative());
-
-        System.out.println("\nTest - add");
+    /////////////////////////////////////////////////////////////////////////////////////
+    private static void makeProductBook(String symbol) {
         try {
-            System.out.println("\t1) Result: Should say $1,012.99: " + p1.add(p2));
-            System.out.println("\t2) Result: Should say $13.84: " + p2.add(p3));
-            System.out.println("\t3) Result: Should say $-74.65: " + p3.add(p4));
-            System.out.println("\t4) Result: Should say $924.50: " + p4.add(p1));
-            System.out.println("\t5) Result: Should say $13.00: " + p5.add(p2));
-            System.out.println("\t6) Should generate an exception with an message: ");
-            p5.add(null);
-        } catch (Exception ipo) {
-            System.out.println(ipo.getMessage());
+            productBook = new ProductBook(symbol);
+        } catch (Exception e) {
+            System.out.println("Failed to make product book: " + symbol + "\n");
         }
+    }
 
-        System.out.println("\nTest - subtract");
+    private static void addNullOrder() {
+        // Try to add a null order to the TGT product book
         try {
-            System.out.println("\t1) Result: Should say $987.01: " + p1.subtract(p2));
-            System.out.println("\t2) Result: Should say $12.14: " + p2.subtract(p3));
-            System.out.println("\t3) Result: Should say $76.35: " + p3.subtract(p4));
-            System.out.println("\t4) Result: Should say $-1,075.50: " + p4.subtract(p1));
-            System.out.println("\t5) Result: Should say $999.99: " + p1.subtract(p5));
-            System.out.println("\t6) Should generate an exception with a message:");
-            p4.subtract(null);
-        } catch (Exception ipo) {
-            System.out.println(ipo.getMessage());
+            productBook.add((Tradable) null);
+            System.out.println("Did not throw exception when adding null order\n");
+        } catch (Exception e) {
+            System.out.println("Correctly rejected null order\n");
         }
+    }
 
-        System.out.println("\nTest - multiply");
-        System.out.println("\t1) Should say $8,000.00: " + p1.multiply(8));
-        System.out.println("\t2) Should say $38.97: " + p2.multiply(3));
-        System.out.println("\t3) Should say $18.70: " + p3.multiply(22));
-        System.out.println("\t4) Should say $-755.00: " + p4.multiply(10));
-        System.out.println("\t5) Should say $-0.03: " + p5.multiply(-3));
-
-
-        System.out.println("\nTest - greaterOrEqual");
+    private static void addNullQuote() {
+        // Try to add a null quote to the TGT product book
         try {
-            System.out.println("\t1) Should say true: " + p1.greaterOrEqual(p1));
-            System.out.println("\t2) Should say true: " + p1.greaterOrEqual(p2));
-            System.out.println("\t3) Should say false: " + p4.greaterOrEqual(p2));
-            System.out.println("\t4) Should say true: " + p3.greaterOrEqual(p4));
-            System.out.println("\t5) Should say false: " + p4.greaterOrEqual(p5));
-            System.out.println("\t6) Should generate an exception with a message: ");
-            p5.greaterOrEqual(null);
-        } catch (Exception ipo) {
-            System.out.println(ipo.getMessage());
+            productBook.add((Quote) null);
+            System.out.println("Did not throw exception when adding null quote\n");
+        } catch (Exception e) {
+            System.out.println("Correctly rejected null quote\n");
         }
+    }
 
-        System.out.println("\nTest - lessOrEqual");
+    private static TradableDTO addOrder(String user, String price, int volume, BookSide side) {
         try {
-            System.out.println("\t1) Should say true: " + p1.lessOrEqual(p1));
-            System.out.println("\t2) Should say false: " + p1.lessOrEqual(p2));
-            System.out.println("\t3) Should say false: " + p2.lessOrEqual(p3));
-            System.out.println("\t4) Should say false: " + p3.lessOrEqual(p4));
-            System.out.println("\t5) Should say true: " + p5.lessOrEqual(p5));
-            System.out.println("\t6) Should generate an exception with a message: ");
-            p5.lessOrEqual(null);
-        } catch (Exception ipo) {
-            System.out.println(ipo.getMessage());
+            return productBook.add(new Order(user, "TGT", PriceFactory.makePrice(price), volume, side));
+        } catch (Exception e) {
+            System.out.println("Failed to add BUY orders");
         }
+        return null;
+    }
 
-        System.out.println("\nTest - greaterThan");
+    private static void cancelOrder(String tradableId, BookSide side) {
         try {
-            System.out.println("\t1) Should say false: " + p1.greaterThan(p1));
-            System.out.println("\t2) Should say true: " + p1.greaterThan(p2));
-            System.out.println("\t3) Should say false: " + p3.greaterThan(p2));
-            System.out.println("\t4) Should say true: " + p3.greaterThan(p4));
-            System.out.println("\t5) Should say false: " + p4.greaterThan(p5));
-            System.out.println("\t6) Should say false: " + p5.greaterThan(p5));
-            System.out.println("\t7) Should generate an exception with a message: ");
-            p5.greaterThan(null);
-        } catch (Exception ipo) {
-            System.out.println(ipo.getMessage());
+            productBook.cancel(side, tradableId);
+        } catch (Exception e) {
+            System.out.println("Failed to cancel " + side + " order\n");
         }
+    }
 
-        System.out.println("\nTest - lessThan");
+    private static void addQuote(String user, String buyPrice, int buyVolume, String sellPrice, int sellVolume) {
         try {
-            System.out.println("\t1) Should say false: " + p1.lessThan(p1));
-            System.out.println("\t2) Should say false: " + p1.lessThan(p2));
-            System.out.println("\t3) Should say true: " + p3.lessThan(p2));
-            System.out.println("\t4) Should say false: " + p3.lessThan(p4));
-            System.out.println("\t5) Should say true: " + p5.lessThan(p3));
-            System.out.println("\t6) Should generate an exception with a message: ");
-            p4.lessThan(null);
-        } catch (Exception ipo) {
-            System.out.println(ipo.getMessage());
+            productBook.add(new Quote("TGT", PriceFactory.makePrice(buyPrice), buyVolume,
+                    PriceFactory.makePrice(sellPrice), sellVolume, user));
+        } catch (Exception e) {
+            System.out.println("Failed to add quotes");
         }
+    }
 
-        System.out.println("\nTest - equals");
-        System.out.println("\t1) Should say true: " + p1.equals(p1));
-        System.out.println("\t2) Should say false: " + p1.equals(p5));
-        System.out.println("\t3) Should say false: " + p5.equals(p1));
-        System.out.println("\t4) Should say true: " + p2.equals(p2));
-        System.out.println("\t5) Should say false: " + p2.equals(p3));
-        System.out.println("\t6) Should say false: " + p3.equals(p4));
-        System.out.println("\t7) Should say true: " + p5.equals(PriceFactory.makePrice(1)));
-        System.out.println("\t8) Should say false: " + p5.equals(null));
+    private static void removeQuote(String user) {
+        try {
+            productBook.removeQuotesForUser(user);
+        } catch (Exception e) {
+            System.out.println("Failed to cancel " + user + " quote\n");
+        }
+    }
 
-        System.out.println("\nTest - compareTo");
-        System.out.println("\t1) Should generate any positive number: " + p1.compareTo(p5));
-        System.out.println("\t2) Should generate any positive number: " + p1.compareTo(p2));
-        System.out.println("\t3) Should generate any negative number: " + p3.compareTo(p2));
-        System.out.println("\t4) Should generate any positive number: " + p3.compareTo(p4));
-        System.out.println("\t5) Should generate 0: " + p4.compareTo(p4));
-        System.out.println("\t6) Should generate 0: " + p5.compareTo(PriceFactory.makePrice(1)));
-        System.out.println("\t7) Should generate any negative number: " + p4.compareTo(null));
-
-        System.out.println("\nTest - toString");
-        System.out.println("\t1) Should generate $1,000.00: " + p1);
-        System.out.println("\t2) Should generate $12.99: " + p2);
-        System.out.println("\t3) Should generate $0.85: " + p3);
-        System.out.println("\t4) Should generate $-75.50: " + p4);
-        System.out.println("\t5) Should generate $0.01: " + p5);
-        System.out.println("\t6) Should generate $0.00: " + PriceFactory.makePrice(0));
-        System.out.println("\t7) Should generate $-12,345,678.90: " + PriceFactory.makePrice(-1234567890));
-
-        System.out.println("\nTest - hashCode");
-        System.out.println("\t1) Should generate true: " + (p1.hashCode() == p1.hashCode()));
-        System.out.println("\t2) Should generate false: " + (p1.hashCode() == p5.hashCode()));
-        System.out.println("\t3) Should generate false: " + (p1.hashCode() == p2.hashCode()));
-        System.out.println("\t4) Should generate false: " + (p1.hashCode() == p3.hashCode()));
-        System.out.println("\t5) Should generate false: " + (p1.hashCode() == p4.hashCode()));
-        System.out.println("\t6) Should generate false: " + (p2.hashCode() == p3.hashCode()));
-        System.out.println("\t7) Should generate false: " + (p2.hashCode() == p4.hashCode()));
-        System.out.println("\t8) Should generate false: " + (p3.hashCode() == p4.hashCode()));
-        System.out.println("\t9) Should generate true: " + (p2.hashCode() == PriceFactory.makePrice(1299).hashCode()));
-        System.out.println("\t10) Should generate true: " + (p3.hashCode() == PriceFactory.makePrice(85).hashCode()));
+    private static void printTopOfBook() {
+        // Print the top of the book
+        System.out.println();
+        System.out.println("Top of BUY book: " + productBook.getTopOfBookString(BookSide.BUY));
+        System.out.println("Top of SELL book: " + productBook.getTopOfBookString(BookSide.SELL));
+        System.out.println();
 
     }
 
+    private static void printBook() {
+        // Print the TGT product book
+        System.out.println(productBook);
+        System.out.println();
+    }
+
+}

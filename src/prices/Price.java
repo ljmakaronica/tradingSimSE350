@@ -80,14 +80,13 @@ public class Price implements Comparable<Price>
     }
 
     @Override
-    public int compareTo(Price p)
-    {
-        if (p == null)
-        {
+    public int compareTo(Price p) {
+        if (p == null) {
             return -1;
         }
-        return Math.abs(cents - p.cents);
+        return Integer.compare(cents, p.cents);
     }
+
 
     @Override
     public String toString()
