@@ -148,7 +148,6 @@ public class ProductBook
         }
         catch (InvalidPriceException e)
         {
-            // Handle exception
             System.out.println("Error during trade: " + e.getMessage());
         }
     }

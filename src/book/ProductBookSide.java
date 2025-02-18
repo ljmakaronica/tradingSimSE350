@@ -198,7 +198,8 @@ public class ProductBookSide
 
                 // First pass - calculate total volume at this price
                 int totalVolumeAtPrice = 0;
-                for (Tradable t : tradables) {
+                for (Tradable t : tradables)
+                {
                     totalVolumeAtPrice += t.getRemainingVolume();
                 }
 
@@ -219,12 +220,12 @@ public class ProductBookSide
 
                     boolean isFullFill = tradeVolume == t.getRemainingVolume();
 
-                    // Update volumes BEFORE printing
+                    // Update volumes before printing
                     t.setFilledVolume(t.getFilledVolume() + tradeVolume);
                     t.setRemainingVolume(t.getRemainingVolume() - tradeVolume);
                     remainingVolume -= tradeVolume;
 
-                    // Print AFTER updating
+                    // Print aftre updating the volumes
                     System.out.printf("\t%s FILL: (%s %d) %s\n",
                             isFullFill ? "FULL" : "PARTIAL",
                             side,

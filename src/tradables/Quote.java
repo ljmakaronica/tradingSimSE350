@@ -30,7 +30,7 @@ public class Quote
         }
 
         // Validate product/symbol
-        if (symbol == null || symbol.length() < 1 || symbol.length() > 5)
+        if (symbol == null || symbol.isEmpty() || symbol.length() > 5)
         {
             throw new InvalidSymbolException("Product must be between 1 and 5 characters");
         }
