@@ -35,7 +35,7 @@ public class ProductBook
         this.sellSide = new ProductBookSide(BookSide.SELL);
     }
 
-    public TradableDTO add(Tradable t) throws InvalidOrderException, InvalidQuoteException
+    public TradableDTO add(Tradable t) throws InvalidOrderException, InvalidQuoteException, DataValidationException
     {
         if (t == null)
         {
@@ -58,7 +58,7 @@ public class ProductBook
         return dto;
     }
 
-    public TradableDTO[] add(Quote q) throws InvalidQuoteException, InvalidOrderException
+    public TradableDTO[] add(Quote q) throws InvalidQuoteException, InvalidOrderException, DataValidationException
     {
         if (q == null)
         {
@@ -92,7 +92,7 @@ public class ProductBook
         return result;
     }
 
-    public TradableDTO cancel(BookSide side, String id)
+    public TradableDTO cancel(BookSide side, String id) throws DataValidationException
     {
         ProductBookSide bookSide;
         if (side == BookSide.BUY)
@@ -106,7 +106,7 @@ public class ProductBook
         return bookSide.cancel(id);
     }
 
-    public ArrayList<TradableDTO> removeQuotesForUser(String user)
+    public ArrayList<TradableDTO> removeQuotesForUser(String user) throws DataValidationException
     {
         ArrayList<TradableDTO> cancelledQuotes = new ArrayList<>();
         cancelledQuotes.addAll(buySide.removeQuotesForUser(user));
@@ -150,6 +150,10 @@ public class ProductBook
         {
             System.out.println("Error during trade: " + e.getMessage());
         }
+        catch (DataValidationException e)
+        {
+            System.out.println("Error updating user during trade: " + e.getMessage());
+        }
     }
 
     public String getTopOfBookString(BookSide side)
@@ -166,9 +170,6 @@ public class ProductBook
         return prefix + String.format("%s x %d", topPrice, topVolume);
     }
 
-
-
-
     @Override
     public String toString()
     {
@@ -184,6 +185,4 @@ public class ProductBook
         result += "--------------------------------------------";
         return result;
     }
-
-
 }

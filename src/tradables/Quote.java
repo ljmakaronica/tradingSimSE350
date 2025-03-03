@@ -6,15 +6,31 @@ import prices.InvalidPriceException;
 
 public class Quote
 {
-    private final String user;
-    private final String product;
+    private String user;
+    private String product;
     private QuoteSide buyQuoteSide;
     private QuoteSide sellQuoteSide;
 
-    public Quote(String symbol, Price buyPrice, int buyVolume, Price sellPrice, int sellVolume,
-                 String userName)
+    public Quote(String symbol, Price buyPrice, int buyVolume, Price sellPrice, int sellVolume, String userName)
             throws InvalidUserException, InvalidSymbolException, InvalidVolumeException,
             InvalidPriceException, InvalidQuoteException
+    {
+        // ASSIGNMENT 2 CORRECTION: NO LONGER USING INLINE VALIDATION ITS SETTER METHODS NOW
+        setUser(userName);
+        setProduct(symbol);
+
+        if (buyPrice != null && buyVolume > 0)
+        {
+            this.buyQuoteSide = new QuoteSide(userName, symbol, buyPrice, buyVolume, BookSide.BUY);
+        }
+
+        if (sellPrice != null && sellVolume > 0)
+        {
+            this.sellQuoteSide = new QuoteSide(userName, symbol, sellPrice, sellVolume, BookSide.SELL);
+        }
+    }
+
+    private void setUser(String userName) throws InvalidUserException
     {
         // Validate user (3 letters, no spaces, no numbers, no special characters)
         if (userName == null || userName.length() != 3)
@@ -28,7 +44,11 @@ public class Quote
                 throw new InvalidUserException("User must contain only letters");
             }
         }
+        this.user = userName;
+    }
 
+    private void setProduct(String symbol) throws InvalidSymbolException
+    {
         // Validate product/symbol
         if (symbol == null || symbol.isEmpty() || symbol.length() > 5)
         {
@@ -41,20 +61,7 @@ public class Quote
                 throw new InvalidSymbolException("Product must contain only letters or dots");
             }
         }
-
-        this.user = userName;
         this.product = symbol;
-
-        // Create QuoteSides with the respective parameters
-        if (buyPrice != null && buyVolume > 0)
-        {
-            this.buyQuoteSide = new QuoteSide(userName, symbol, buyPrice, buyVolume, BookSide.BUY);
-        }
-
-        if (sellPrice != null && sellVolume > 0)
-        {
-            this.sellQuoteSide = new QuoteSide(userName, symbol, sellPrice, sellVolume, BookSide.SELL);
-        }
     }
 
     public QuoteSide getQuoteSide(BookSide side)

@@ -4,6 +4,8 @@ import tradables.*;
 import java.util.*;
 import exceptions.*;
 import prices.InvalidPriceException;
+import users.UserManager;
+
 public class ProductBookSide
 {
     private final BookSide side;
@@ -26,7 +28,7 @@ public class ProductBookSide
         }
     }
 
-    public TradableDTO add(Tradable t)
+    public TradableDTO add(Tradable t) throws DataValidationException
     {
         if (t == null)
         {
@@ -46,10 +48,15 @@ public class ProductBookSide
         }
         tradables.add(t);
 
-        return t.makeTradableDTO();
+        TradableDTO dto = t.makeTradableDTO();
+
+        // Update the user's tradable at the end of the method
+        UserManager.getInstance().updateTradable(t.getUser(), dto);
+
+        return dto;
     }
 
-    public TradableDTO cancel(String id)
+    public TradableDTO cancel(String id) throws DataValidationException
     {
         if (id == null || id.isEmpty())
         {
@@ -81,14 +88,19 @@ public class ProductBookSide
                     t.setCancelledVolume(t.getRemainingVolume());
                     t.setRemainingVolume(0);
 
-                    return t.makeTradableDTO();
+                    TradableDTO dto = t.makeTradableDTO();
+
+                    // Update the user's tradable at the end of the IF block
+                    UserManager.getInstance().updateTradable(t.getUser(), dto);
+
+                    return dto;
                 }
             }
         }
         return null;
     }
 
-    public ArrayList<TradableDTO> removeQuotesForUser(String user)
+    public ArrayList<TradableDTO> removeQuotesForUser(String user) throws DataValidationException
     {
         if (user == null || user.isEmpty())
         {
@@ -132,6 +144,13 @@ public class ProductBookSide
         {
             bookEntries.remove(p);
         }
+
+        // Update the user's tradables at the end of the method
+        for (TradableDTO dto : cancelledQuotes)
+        {
+            UserManager.getInstance().updateTradable(user, dto);
+        }
+
         return cancelledQuotes;
     }
 
@@ -156,7 +175,7 @@ public class ProductBookSide
     }
 
 
-    public boolean tradeOut(Price price, int volume)
+    public boolean tradeOut(Price price, int volume) throws DataValidationException, InvalidPriceException
     {
         if (price == null || volume <= 0)
         {
@@ -169,95 +188,91 @@ public class ProductBookSide
             return false;
         }
 
-        try
-        {
-            boolean canTrade = (side == BookSide.BUY)
-                    ? topPrice.greaterOrEqual(price)
-                    : topPrice.lessOrEqual(price);
+        boolean canTrade = (side == BookSide.BUY)
+                ? topPrice.greaterOrEqual(price)
+                : topPrice.lessOrEqual(price);
 
-            if (!canTrade)
-            {
-                return false;
-            }
-
-            int remainingVolume = volume;
-            ArrayList<Price> emptyPrices = new ArrayList<>();
-
-            for (Price bookPrice : bookEntries.keySet())
-            {
-                if (remainingVolume <= 0) break;
-
-                canTrade = (side == BookSide.BUY)
-                        ? bookPrice.greaterOrEqual(price)
-                        : bookPrice.lessOrEqual(price);
-
-                if (!canTrade) break;
-
-                ArrayList<Tradable> tradables = bookEntries.get(bookPrice);
-                ArrayList<Tradable> remainingTradables = new ArrayList<>();
-
-                // First pass - calculate total volume at this price
-                int totalVolumeAtPrice = 0;
-                for (Tradable t : tradables)
-                {
-                    totalVolumeAtPrice += t.getRemainingVolume();
-                }
-
-                // Second pass - perform trades
-                for (Tradable t : tradables)
-                {
-                    if (remainingVolume <= 0)
-                    {
-                        remainingTradables.add(t);
-                        continue;
-                    }
-
-                    // Calculate this trade's portion of the total volume
-                    double ratio = (double) t.getRemainingVolume() / totalVolumeAtPrice;
-                    int tradeVolume = (int) Math.ceil(volume * ratio);
-                    tradeVolume = Math.min(tradeVolume, remainingVolume);
-                    tradeVolume = Math.min(tradeVolume, t.getRemainingVolume());
-
-                    boolean isFullFill = tradeVolume == t.getRemainingVolume();
-
-                    // Update volumes before printing
-                    t.setFilledVolume(t.getFilledVolume() + tradeVolume);
-                    t.setRemainingVolume(t.getRemainingVolume() - tradeVolume);
-                    remainingVolume -= tradeVolume;
-
-                    // Print aftre updating the volumes
-                    System.out.printf("\t%s FILL: (%s %d) %s\n",
-                            isFullFill ? "FULL" : "PARTIAL",
-                            side,
-                            tradeVolume,
-                            t.toString());
-
-                    if (t.getRemainingVolume() > 0)
-                    {
-                        remainingTradables.add(t);
-                    }
-                }
-
-                if (remainingTradables.isEmpty())
-                {
-                    emptyPrices.add(bookPrice);
-                }
-                else
-                {
-                    bookEntries.put(bookPrice, remainingTradables);
-                }
-            }
-
-            for (Price p : emptyPrices)
-            {
-                bookEntries.remove(p);
-            }
-            return remainingVolume == 0;
-        }
-        catch (InvalidPriceException e)
+        if (!canTrade)
         {
             return false;
         }
+
+        int remainingVolume = volume;
+        ArrayList<Price> emptyPrices = new ArrayList<>();
+
+        for (Price bookPrice : bookEntries.keySet())
+        {
+            if (remainingVolume <= 0) break;
+
+            canTrade = (side == BookSide.BUY)
+                    ? bookPrice.greaterOrEqual(price)
+                    : bookPrice.lessOrEqual(price);
+
+            if (!canTrade) break;
+
+            ArrayList<Tradable> tradables = bookEntries.get(bookPrice);
+            ArrayList<Tradable> remainingTradables = new ArrayList<>();
+
+            // First pass - calculate total volume at this price
+            int totalVolumeAtPrice = 0;
+            for (Tradable t : tradables)
+            {
+                totalVolumeAtPrice += t.getRemainingVolume();
+            }
+
+            // Second pass - perform trades
+            for (Tradable t : tradables)
+            {
+                if (remainingVolume <= 0)
+                {
+                    remainingTradables.add(t);
+                    continue;
+                }
+
+                // Calculate this trade's portion of the total volume
+                double ratio = (double) t.getRemainingVolume() / totalVolumeAtPrice;
+                int tradeVolume = (int) Math.ceil(volume * ratio);
+                tradeVolume = Math.min(tradeVolume, remainingVolume);
+                tradeVolume = Math.min(tradeVolume, t.getRemainingVolume());
+
+                boolean isFullFill = tradeVolume == t.getRemainingVolume();
+
+                // Update volumes before printing
+                t.setFilledVolume(t.getFilledVolume() + tradeVolume);
+                t.setRemainingVolume(t.getRemainingVolume() - tradeVolume);
+                remainingVolume -= tradeVolume;
+
+                // Print after updating the volumes
+                System.out.printf("\t%s FILL: (%s %d) %s\n",
+                        isFullFill ? "FULL" : "PARTIAL",
+                        side,
+                        tradeVolume,
+                        t.toString());
+
+                // Update the user's tradable after modifying it
+                UserManager.getInstance().updateTradable(t.getUser(), t.makeTradableDTO());
+
+                if (t.getRemainingVolume() > 0)
+                {
+                    remainingTradables.add(t);
+                }
+            }
+
+            if (remainingTradables.isEmpty())
+            {
+                emptyPrices.add(bookPrice);
+            }
+            else
+            {
+                bookEntries.put(bookPrice, remainingTradables);
+            }
+        }
+
+        for (Price p : emptyPrices)
+        {
+            bookEntries.remove(p);
+        }
+        return remainingVolume == 0;
     }
 
     @Override
@@ -279,6 +294,4 @@ public class ProductBookSide
         }
         return result;
     }
-
-
 }
