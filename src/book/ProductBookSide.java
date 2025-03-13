@@ -24,7 +24,7 @@ public class ProductBookSide
         }
         else
         {
-            this.bookEntries = new TreeMap<>(); // Default ascending //We need to get the lowest sell price (lowest at top)
+            this.bookEntries = new TreeMap<>(); // Default ascending, We need to get the lowest sell price (lowest at top)
         }
     }
 

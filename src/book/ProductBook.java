@@ -1,4 +1,5 @@
 package book;
+import market.CurrentMarketTracker;
 import prices.Price;
 import tradables.*;
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ public class ProductBook
         }
         TradableDTO dto = side.add(t);
         tryTrade();
+        updateMarket(); //added this for assignment 4
         return dto;
     }
 
@@ -103,7 +105,9 @@ public class ProductBook
         {
             bookSide = sellSide;
         }
-        return bookSide.cancel(id);
+        TradableDTO dto = bookSide.cancel(id);
+        updateMarket(); // assignment 4
+        return dto;
     }
 
     public ArrayList<TradableDTO> removeQuotesForUser(String user) throws DataValidationException
@@ -111,6 +115,7 @@ public class ProductBook
         ArrayList<TradableDTO> cancelledQuotes = new ArrayList<>();
         cancelledQuotes.addAll(buySide.removeQuotesForUser(user));
         cancelledQuotes.addAll(sellSide.removeQuotesForUser(user));
+        updateMarket(); // assignment 4 addition
         return cancelledQuotes;
     }
 
@@ -154,6 +159,20 @@ public class ProductBook
         {
             System.out.println("Error updating user during trade: " + e.getMessage());
         }
+    }
+
+
+    //assignment 4 method
+    private void updateMarket()
+    {
+        // Get top of book Price and volume for both the buy and sell sides
+        Price buyPrice = buySide.topOfBookPrice();
+        int buyVolume = buySide.topOfBookVolume();
+        Price sellPrice = sellSide.topOfBookPrice();
+        int sellVolume = sellSide.topOfBookVolume();
+
+        // Call the CurrentMarketTracker updateMarket method
+        CurrentMarketTracker.getInstance().updateMarket(product, buyPrice, buyVolume, sellPrice, sellVolume);
     }
 
     public String getTopOfBookString(BookSide side)

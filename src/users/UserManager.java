@@ -2,6 +2,7 @@ package users;
 
 import java.util.TreeMap;
 import exceptions.DataValidationException;
+import exceptions.InvalidUserException;
 import tradables.TradableDTO;
 
 public class UserManager
@@ -65,6 +66,17 @@ public class UserManager
         }
 
         user.updateTradable(tradableDTO);
+    }
+
+    //assignment 4 addition
+    public User getUser(String userId) throws InvalidUserException
+    {
+        User user = users.get(userId);
+        if (user == null)
+        {
+            throw new InvalidUserException("User does not exist: " + userId);
+        }
+        return user;
     }
 
     @Override
